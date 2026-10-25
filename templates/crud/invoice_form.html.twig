@@ -1,0 +1,64 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nouvelle facture{% endblock %}
+
+{% block body %}
+    <h1 class="h2 fw-bold mb-4">Créer une facture</h1>
+
+    <div class="card p-4" style="max-width:850px">
+        <form method="post">
+            <div class="row g-3">
+
+                <div class="col-md-6">
+                    <label class="form-label">Voiture / client</label>
+                    <select class="form-select" name="vehicle" required>
+                        <option value="">Choisir</option>
+                        {% for v in vehicles %}
+                            <option value="{{ v.id }}">{{ v.registrationNumber }} — {{ v.ownerName }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Réparation liée (facultatif)</label>
+                    <select class="form-select" name="repair">
+                        <option value="">Aucune</option>
+                        {% for r in repairs %}
+                            <option value="{{ r.id }}">{{ r.title }} — {{ r.vehicle.registrationNumber }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                {# CORRECTION ICI : Utilisation de dictionnaires au lieu de tableaux simples #}
+                {% for field in [
+                    {'key': 'laborAmount', 'label': 'Main-d’œuvre (DT)', 'val': '0'},
+                    {'key': 'partsAmount', 'label': 'Pièces (DT)', 'val': '0'},
+                    {'key': 'taxRate', 'label': 'TVA (%)', 'val': '19'}
+                ] %}
+                    <div class="col-md-4">
+                        <label class="form-label">{{ field.label }}</label>
+                        <input class="form-control" name="{{ field.key }}" type="number" min="0" step=".01" value="{{ field.val }}">
+                    </div>
+                {% endfor %}
+
+                <div class="col-md-6">
+                    <label class="form-label">Statut</label>
+                    <select class="form-select" name="status">
+                        <option>Brouillon</option>
+                        <option>Émise</option>
+                        <option>Payée</option>
+                        <option>Annulée</option>
+                    </select>
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">Notes</label>
+                    <textarea class="form-control" name="notes"></textarea>
+                </div>
+
+            </div>
+
+            <button class="btn btn-primary mt-4">Créer la facture</button>
+        </form>
+    </div>
+{% endblock %}

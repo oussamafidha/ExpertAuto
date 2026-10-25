@@ -1,0 +1,24 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Voiture {{ item.registrationNumber }}{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <h1 class="h2 fw-bold mb-0">Fiche voiture</h1>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-secondary" href="{{ path('vehicle_index') }}">Retour aux voitures</a>
+            {% if is_granted('ROLE_MECHANIC') %}
+                <a class="btn btn-primary" href="{{ path('vehicle_edit', {id: item.id}) }}">Modifier</a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="card p-4">
+        <dl class="row mb-0">
+            <dt class="col-sm-4">Immatriculation</dt><dd class="col-sm-8">{{ item.registrationNumber }}</dd>
+            <dt class="col-sm-4">Marque et modèle</dt><dd class="col-sm-8">{{ item.make }} {{ item.model }}</dd>
+            <dt class="col-sm-4">Client</dt><dd class="col-sm-8">{{ item.ownerName }}</dd>
+            <dt class="col-sm-4">Téléphone</dt><dd class="col-sm-8">{{ item.ownerPhone ?: '—' }}</dd>
+            <dt class="col-sm-4">Notes</dt><dd class="col-sm-8">{{ item.notes ?: '—' }}</dd>
+        </dl>
+    </div>
+{% endblock %}

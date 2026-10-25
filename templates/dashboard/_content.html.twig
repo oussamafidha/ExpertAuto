@@ -1,0 +1,123 @@
+<div class="dashboard-heading d-flex justify-content-between flex-wrap gap-3 align-items-end mb-4">
+    <div>
+        <p class="text-uppercase text-secondary small fw-semibold mb-1">Date et heure maintenant</p>
+        <h1 class="h2 fw-bold mb-0">{{ 'now'|date('d/m/Y · H:i') }}</h1>
+    </div>
+    <div class="d-flex align-items-center flex-wrap gap-3">
+        {% if app.user %}
+            <div class="d-flex flex-wrap gap-2">
+                <a class="btn btn-outline-primary" href="{{ path('appointment_new') }}">＋ Nouveau rendez-vous</a>
+                <a class="btn btn-primary" href="{{ path('repair_new') }}">＋ Nouvelle réparation</a>
+            </div>
+        {% endif %}
+        <img class="dashboard-logo" src="{{ asset('images/expert-auto-logo.png') }}" alt="Logo Expert Auto">
+    </div>
+</div>
+
+<div class="row g-3 align-items-stretch">
+    {% set columns = [
+        {
+            title: 'Voitures en attente',
+            repairs: waitingRepairs,
+            tone: 'waiting',
+            empty: 'Aucune voiture en attente.'
+        },
+        {
+            title: 'Voitures en réparation',
+            repairs: ongoingRepairs,
+            tone: 'ongoing',
+            empty: 'Aucune réparation en cours.'
+        }
+    ] %}
+
+    {% for column in columns %}
+        <div class="col-12 col-xxl-6">
+            <section class="card dashboard-panel dashboard-panel--{{ column.tone }} h-100">
+                <div class="d-flex justify-content-between align-items-center p-3 p-xl-4 pb-2">
+                    <h2 class="h5 fw-bold mb-0">{{ column.title }}</h2>
+                    <span class="badge rounded-pill text-bg-light border">{{ column.repairs|length }}</span>
+                </div>
+                <div class="table-responsive px-3 px-xl-4 pb-3">
+                    <table class="table dashboard-table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Voiture</th>
+                                <th>Réparation</th>
+                                <th>Réparateur</th>
+                                {% if column.tone == 'waiting' %}
+                                    <th>Heure début estimée</th>
+                                {% else %}
+                                    <th>Début</th>
+                                    <th>Fin</th>
+                                {% endif %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for repair in column.repairs %}
+                                <tr>
+                                    <td>
+                                        <span class="d-block fw-semibold">{{ repair.vehicle.registrationNumber }}</span>
+                                        <span class="small text-secondary">{{ repair.vehicle.make }} {{ repair.vehicle.model }}</span>
+                                    </td>
+                                    <td>{{ repair.title }}</td>
+                                    <td>{{ repair.mechanic ? repair.mechanic.fullName : 'Non affecté' }}</td>
+                                    {% if column.tone == 'waiting' %}
+                                        {% set plannedStart = plannedStartByVehicle[repair.vehicle.id]|default(null) %}
+                                        <td>{{ plannedStart ? plannedStart|date('d/m/Y à H:i') : 'Non planifié' }}</td>
+                                    {% else %}
+                                        <td>{{ repair.openedAt|date('d/m/Y') }}</td>
+                                        <td>{{ repair.closedAt ? repair.closedAt|date('d/m/Y') : '—' }}</td>
+                                    {% endif %}
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="{{ column.tone == 'waiting' ? 4 : 5 }}" class="text-center text-secondary py-4">{{ column.empty }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    {% endfor %}
+
+    <div class="col-12">
+        <section class="card dashboard-panel dashboard-panel--completed h-100">
+            <div class="d-flex justify-content-between align-items-center p-3 p-xl-4 pb-2">
+                <h2 class="h5 fw-bold mb-0">Voitures réparées</h2>
+                <span class="badge rounded-pill text-bg-light border">{{ completedRepairs|length }}</span>
+            </div>
+            <div class="table-responsive px-3 px-xl-4 pb-3">
+                <table class="table dashboard-table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Voiture</th>
+                            <th>Réparation</th>
+                            <th>Réparateur</th>
+                            <th>Début</th>
+                            <th>Fin</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for repair in completedRepairs %}
+                            <tr>
+                                <td>
+                                    <span class="d-block fw-semibold">{{ repair.vehicle.registrationNumber }}</span>
+                                    <span class="small text-secondary">{{ repair.vehicle.make }} {{ repair.vehicle.model }}</span>
+                                </td>
+                                <td>{{ repair.title }}</td>
+                                <td>{{ repair.mechanic ? repair.mechanic.fullName : 'Non affecté' }}</td>
+                                <td>{{ repair.openedAt|date('d/m/Y') }}</td>
+                                <td>{{ repair.closedAt ? repair.closedAt|date('d/m/Y') : '—' }}</td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center text-secondary py-4">Aucune réparation terminée.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</div>

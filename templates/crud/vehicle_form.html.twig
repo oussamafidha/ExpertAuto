@@ -1,0 +1,36 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Voiture{% endblock %}
+
+{% block body %}
+    <h1 class="h2 fw-bold mb-4">{{ item.id ? 'Modifier une voiture' : 'Ajouter une voiture' }}</h1>
+
+    <div class="card p-4" style="max-width:850px">
+        <form method="post">
+            <div class="row g-3">
+                {% for field in [
+                    {'key': 'registrationNumber', 'label': 'Immatriculation', 'type': 'text'},
+                    {'key': 'make', 'label': 'Marque', 'type': 'text'},
+                    {'key': 'model', 'label': 'Modèle', 'type': 'text'},
+                    {'key': 'ownerName', 'label': 'Nom du client', 'type': 'text'},
+                    {'key': 'ownerPhone', 'label': 'Téléphone', 'type': 'text'}
+                ] %}
+                    <div class="col-md-6">
+                        <label class="form-label">{{ field.label }}</label>
+                        <input class="form-control"
+                               name="{{ field.key }}"
+                               type="{{ field.type }}"
+                               value="{{ attribute(item, field.key) }}"
+                               {% if field.key != 'ownerPhone' %}required{% endif %}>
+                    </div>
+                {% endfor %}
+
+                <div class="col-12">
+                    <label class="form-label">Notes</label>
+                    <textarea class="form-control" name="notes" rows="3">{{ item.notes }}</textarea>
+                </div>
+            </div>
+            <button class="btn btn-primary mt-4">Enregistrer</button>
+        </form>
+    </div>
+{% endblock %}

@@ -1,0 +1,23 @@
+# config/services.yaml
+parameters:
+
+services:
+  # Configuration par défaut pour les services de cette application
+  _defaults:
+    autowire: true      # Injecte automatiquement les dépendances dans vos constructeurs
+    autoconfigure: true # Ajoute automatiquement les tags (comme le tag de contrôleur)
+
+  # Rend les classes du dossier src/ disponibles en tant que services
+  # Cela crée un service par classe dont l'identifiant est le nom complet de la classe
+  App\:
+    resource: '../src/'
+    exclude:
+      - '../src/DependencyInjection/'
+      - '../src/Entity/'
+      - '../src/Kernel.php'
+
+  # Enregistre tous les contrôleurs et leur ajoute le tag 'controller.service_arguments'
+  # C'est ce tag qui permet au conteneur d'être injecté dans vos contrôleurs
+  App\Controller\:
+    resource: '../src/Controller/'
+    tags: ['controller.service_arguments']

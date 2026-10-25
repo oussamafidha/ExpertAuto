@@ -1,0 +1,73 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Réparation — {{ item.vehicle.registrationNumber }}{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <h1 class="h2 fw-bold mb-0">Fiche réparation</h1>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-secondary" href="{{ path('repair_index') }}">Retour aux réparations</a>
+            {% if is_granted('ROLE_MECHANIC') %}
+                <a class="btn btn-primary" href="{{ path('repair_edit', {id: item.id}) }}">Modifier</a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="card p-4">
+        <dl class="row mb-0">
+            <dt class="col-sm-4">Voiture</dt><dd class="col-sm-8">{{ item.vehicle.registrationNumber }} — {{ item.vehicle.make }} {{ item.vehicle.model }}</dd>
+            <dt class="col-sm-4">Client</dt><dd class="col-sm-8">{{ item.vehicle.ownerName }}</dd>
+            <dt class="col-sm-4">Intervention</dt><dd class="col-sm-8">{{ item.title }}</dd>
+            <dt class="col-sm-4">Description</dt><dd class="col-sm-8">{{ item.description ?: '—' }}</dd>
+            <dt class="col-sm-4">Mécanicien</dt><dd class="col-sm-8">{{ item.mechanic ? item.mechanic.fullName : 'Non affecté' }}</dd>
+            <dt class="col-sm-4">Statut</dt><dd class="col-sm-8">{{ item.status }}</dd>
+            <dt class="col-sm-4">Date de début</dt><dd class="col-sm-8">{{ item.openedAt|date('d/m/Y H:i') }}</dd>
+            <dt class="col-sm-4">Date de fin</dt><dd class="col-sm-8">{{ item.closedAt ? item.closedAt|date('d/m/Y H:i') : '—' }}</dd>
+            <dt class="col-sm-4">Main-d’œuvre</dt><dd class="col-sm-8">{{ item.laborCost }} DT</dd>
+        </dl>
+    </div>
+    <div class="card p-4 mt-4">
+        <h2 class="h5 fw-bold mb-3">Historique des états</h2>
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Date et heure</th>
+                        <th>État précédent</th>
+                        <th>Nouvel état</th>
+                        <th>Modifié par</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for change in history %}
+                        <tr>
+                            <td>{{ change.createdAt|date('d/m/Y H:i:s') }}</td>
+                            <td>{{ change.previousStatus ?: 'Création' }}</td>
+                            <td>{{ change.newStatus }}</td>
+                            <td>{{ change.changedBy ? change.changedBy.fullName : 'Non renseigné' }}</td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center text-secondary py-3">Aucun historique disponible pour cette réparation.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% if is_granted('ROLE_MECHANIC') and transitions is not empty %}
+        <div class="card p-4 mt-4">
+            <h2 class="h5 fw-bold mb-3">Faire évoluer la réparation</h2>
+            <div class="d-flex flex-wrap gap-2">
+                {% for transition in transitions %}
+                    <form method="post" action="{{ path('repair_transition', {id: item.id}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('repair_transition_' ~ item.id) }}">
+                        <input type="hidden" name="nextState" value="{{ transition.nextState }}">
+                        <button class="btn {{ transition.nextState == 'Annulé' ? 'btn-outline-danger' : 'btn-outline-primary' }}" type="submit">
+                            {{ transition.nextState == 'Annulé' ? 'Annuler' : 'Passer à ' ~ transition.nextState }}
+                        </button>
+                    </form>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}

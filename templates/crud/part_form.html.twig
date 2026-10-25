@@ -1,0 +1,36 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ item.id ? 'Modifier une pièce' : 'Ajouter une pièce' }}{% endblock %}
+
+{% block body %}
+    <h1 class="h2 fw-bold mb-4">{{ item.id ? 'Modifier une pièce détachée' : 'Ajouter une pièce détachée' }}</h1>
+
+    <div class="card p-4" style="max-width:850px">
+        <form method="post">
+            <div class="row g-3">
+
+                {% for field in [
+                    {'key': 'reference', 'label': 'Référence', 'type': 'text', 'value': item.reference},
+                    {'key': 'name', 'label': 'Nom de la pièce', 'type': 'text', 'value': item.name},
+                    {'key': 'stock', 'label': 'Quantité en stock', 'type': 'number', 'value': item.stock},
+                    {'key': 'unitPrice', 'label': 'Prix unitaire (DT)', 'type': 'number', 'value': item.unitPrice},
+                    {'key': 'supplier', 'label': 'Fournisseur', 'type': 'text', 'value': item.supplier},
+                    {'key': 'alertThreshold', 'label': 'Seuil d’alerte', 'type': 'number', 'value': item.alertThreshold}
+                ] %}
+                    <div class="col-md-6">
+                        <label class="form-label">{{ field.label }}</label>
+                        <input class="form-control"
+                               name="{{ field.key }}"
+                               type="{{ field.type }}"
+                               {% if field.type == 'number' %}min="0"{% endif %}
+                                {% if field.key == 'unitPrice' %}step=".01"{% endif %}
+                                {% if field.key in ['reference', 'name'] %}required{% endif %}
+                               value="{{ field.value }}">
+                    </div>
+                {% endfor %}
+
+            </div>
+            <button class="btn btn-primary mt-4">Enregistrer</button>
+        </form>
+    </div>
+{% endblock %}
