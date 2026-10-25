@@ -1,0 +1,39 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "8000:80" # Accès via http://localhost:8000
+    volumes:
+      - .:/var/www/html # Permet de modifier le code en direct (pratique en dev)
+    environment:
+      # On passe l'URL de la base de données au conteneur Symfony
+      # Attention : "db" correspond au nom du service MySQL ci-dessous
+      DATABASE_URL: "mysql://amine:amine1987@db:3306/expert_auto_plus?serverVersion=8.0&charset=utf8mb4"
+    depends_on:
+      db:
+        condition: service_healthy # Attend que MySQL soit "healthy" avant de démarrer
+    restart: always
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: expert_auto_plus
+      MYSQL_USER: amine
+      MYSQL_PASSWORD: amine1987
+    ports:
+      - "3307:3306" # Optionnel : expose MySQL sur le port 3307 de votre machine
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s # Laisse le temps à MySQL de s'initialiser
+
+volumes:
+  db_data: # Volume pour persister les données de la base

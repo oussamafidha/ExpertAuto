@@ -1,0 +1,38 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Suivi de l’atelier{% endblock %}
+
+{% block body %}
+    <div id="dashboardContent" data-refresh-url="{{ path('app_dashboard_refresh') }}">
+        {% include 'dashboard/_content.html.twig' %}
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        const dashboardContent = document.getElementById('dashboardContent');
+
+        window.setInterval(async () => {
+            try {
+                const response = await fetch(dashboardContent.dataset.refreshUrl, {
+                    cache: 'no-store',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                if (response.redirected) {
+                    window.location.assign(response.url);
+                    return;
+                }
+
+                if (!response.ok) {
+                    throw new Error(`Échec de l’actualisation du dashboard : ${response.status}`);
+                }
+
+                dashboardContent.innerHTML = await response.text();
+            } catch (error) {
+                console.error(error);
+            }
+        }, 60_000);
+    </script>
+{% endblock %}
