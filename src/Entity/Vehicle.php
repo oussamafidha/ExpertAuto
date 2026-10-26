@@ -14,6 +14,9 @@ class Vehicle
     #[ORM\Column(length: 80)] #[Assert\NotBlank] private string $model = '';
     #[ORM\Column(length: 120)] #[Assert\NotBlank] private string $ownerName = '';
     #[ORM\Column(length: 30, nullable: true)] private ?string $ownerPhone = null;
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(name: 'client_id', nullable: true, onDelete: 'SET NULL')]
+    private ?User $client = null;
     #[ORM\Column(type: 'text', nullable: true)] private ?string $notes = null;
     #[ORM\Column] private \DateTimeImmutable $createdAt;
     public function __construct() { $this->createdAt = new \DateTimeImmutable(); }
@@ -28,6 +31,8 @@ class Vehicle
     public function setOwnerName(string $v): self { $this->ownerName = trim($v); return $this; }
     public function getOwnerPhone(): ?string { return $this->ownerPhone; }
     public function setOwnerPhone(?string $v): self { $this->ownerPhone = $v ?: null; return $this; }
+    public function getClient(): ?User { return $this->client; }
+    public function setClient(?User $client): self { $this->client = $client; return $this; }
     public function getNotes(): ?string { return $this->notes; }
     public function setNotes(?string $v): self { $this->notes = $v; return $this; }
 }

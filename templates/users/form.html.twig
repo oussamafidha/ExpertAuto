@@ -1,0 +1,32 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ item.id ? 'Modifier un utilisateur' : 'Nouvel utilisateur' }}{% endblock %}
+
+{% block body %}
+    <h1 class="h2 fw-bold mb-4">{{ item.id ? 'Modifier un utilisateur' : 'Créer un utilisateur' }}</h1>
+    <div class="card p-4" style="max-width: 700px">
+        {% if error %}
+            <div class="alert alert-danger" role="alert">{{ error }}</div>
+        {% endif %}
+        <form method="post">
+            <input type="hidden" name="_token" value="{{ csrf_token('user_form_' ~ (item.id ?? 'new')) }}">
+            <label class="form-label" for="fullName">Nom complet</label>
+            <input id="fullName" class="form-control mb-3" name="fullName" value="{{ item.fullName }}" required>
+
+            <label class="form-label" for="email">Adresse e-mail</label>
+            <input id="email" class="form-control mb-3" type="email" name="email" value="{{ item.email }}" required>
+
+            <label class="form-label" for="role">Rôle</label>
+            <select id="role" class="form-select mb-3" name="role" required>
+                {% for label, role in roleChoices %}
+                    <option value="{{ role }}" {{ role in item.roles ? 'selected' : '' }}>{{ label }}</option>
+                {% endfor %}
+            </select>
+
+            <label class="form-label" for="password">Mot de passe {{ item.id ? '(laisser vide pour ne pas le modifier)' : '' }}</label>
+            <input id="password" class="form-control mb-4" type="password" name="password" {{ item.id ? '' : 'required' }} minlength="12" autocomplete="new-password">
+            <button class="btn btn-primary" type="submit">Enregistrer</button>
+            <a class="btn btn-outline-secondary" href="{{ path('user_index') }}">Annuler</a>
+        </form>
+    </div>
+{% endblock %}
