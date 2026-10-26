@@ -8,14 +8,25 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 
 final class SecurityController extends AbstractController
 {
     #[Route('/connexion', name: 'app_login', methods: ['GET', 'POST'])]
-    public function login(): Response
+    public function login(AuthenticationUtils $authenticationUtils, Request $request): Response
     {
-        if ($this->getUser()) return $this->redirectToRoute('app_dashboard');
-        return $this->render('security/login.html.twig');
+        if ($this->getUser()) {
+            return $this->redirectToRoute('app_dashboard');
+        }
+
+        $targetPath = $request->query->get('_target_path')
+            ?? $request->getSession()->get('_security.main.target_path');
+
+        return $this->render('security/login.html.twig', [
+            'last_username' => $authenticationUtils->getLastUsername(),
+            'error' => $authenticationUtils->getLastAuthenticationError(),
+            'target_path' => $targetPath,
+        ]);
     }
 
     #[Route('/deconnexion', name: 'app_logout', methods: ['GET'])]
@@ -35,7 +46,7 @@ final class SecurityController extends AbstractController
             if (!filter_var($email, FILTER_VALIDATE_EMAIL) || $name === '' || strlen($password) < 12) {
                 $error = 'Saisissez un email valide, un nom et un mot de passe de 12 caractères minimum.';
             } else {
-                $user = (new User())->setEmail($email)->setFullName($name)->setRoles(['ROLE_ADMIN', 'ROLE_MECHANIC']);
+                $user = (new User())->setEmail($email)->setFullName($name)->setRoles([User::ROLE_ADMIN]);
                 $user->setPassword($hasher->hashPassword($user, $password));
                 $em->persist($user); $em->flush();
                 return $this->redirectToRoute('app_login');

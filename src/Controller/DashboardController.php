@@ -3,6 +3,7 @@ namespace App\Controller;
 
 use App\Entity\Appointment;
 use App\Entity\Repair;
+use App\Entity\RepairStatusHistory;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
@@ -31,7 +32,6 @@ final class DashboardController extends AbstractController
         $repairsByStatus = [
             'waitingRepairs' => [],
             'ongoingRepairs' => [],
-            'completedRepairs' => [],
         ];
 
         foreach ($repairs as $repair) {
@@ -39,17 +39,38 @@ final class DashboardController extends AbstractController
                 $repairsByStatus['waitingRepairs'][] = $repair;
             } elseif ($repair->getStatus() === 'En réparation') {
                 $repairsByStatus['ongoingRepairs'][] = $repair;
-            } elseif ($repair->getStatus() === 'Réparé') {
-                $repairsByStatus['completedRepairs'][] = $repair;
             }
         }
 
         usort(
-            $repairsByStatus['completedRepairs'],
-            static fn (Repair $first, Repair $second): int =>
-                ($second->getClosedAt() ?? $second->getOpenedAt()) <=> ($first->getClosedAt() ?? $first->getOpenedAt())
+            $repairsByStatus['waitingRepairs'],
+            static fn (Repair $first, Repair $second): int => $first->getOpenedAt() <=> $second->getOpenedAt()
         );
-        $repairsByStatus['completedRepairs'] = array_slice($repairsByStatus['completedRepairs'], 0, 3);
+
+        $timezone = new \DateTimeZone('Africa/Tunis');
+        $today = new \DateTimeImmutable('today', $timezone);
+        $tomorrow = $today->modify('+1 day');
+        $completedHistory = $em->createQueryBuilder()
+            ->select('history.id')
+            ->from(RepairStatusHistory::class, 'history')
+            ->where('history.repair = repair')
+            ->andWhere('history.newStatus = :completedStatus')
+            ->andWhere('history.createdAt >= :today')
+            ->andWhere('history.createdAt < :tomorrow');
+
+        $completedRepairs = $em->createQueryBuilder()
+            ->select('repair, vehicle, mechanic')
+            ->from(Repair::class, 'repair')
+            ->join('repair.vehicle', 'vehicle')
+            ->leftJoin('repair.mechanic', 'mechanic')
+            ->where('repair.status = :completedStatus')
+            ->andWhere($em->createQueryBuilder()->expr()->exists($completedHistory->getDQL()))
+            ->setParameter('completedStatus', 'Réparé')
+            ->setParameter('today', $today)
+            ->setParameter('tomorrow', $tomorrow)
+            ->orderBy('repair.closedAt', 'DESC')
+            ->getQuery()
+            ->getResult();
 
         $appointments = $em->createQueryBuilder()->select('a, v')->from(Appointment::class, 'a')
             ->join('a.vehicle', 'v')
@@ -70,7 +91,7 @@ final class DashboardController extends AbstractController
         return [
             'waitingRepairs' => $repairsByStatus['waitingRepairs'],
             'ongoingRepairs' => $repairsByStatus['ongoingRepairs'],
-            'completedRepairs' => $repairsByStatus['completedRepairs'],
+            'completedRepairs' => $completedRepairs,
             'plannedStartByVehicle' => $plannedStartByVehicle,
         ];
     }

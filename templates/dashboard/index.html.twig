@@ -12,6 +12,74 @@
     {{ parent() }}
     <script>
         const dashboardContent = document.getElementById('dashboardContent');
+        let dashboardRotationTimers = [];
+
+        function initializeDashboardRotations() {
+            dashboardRotationTimers.forEach((timer) => window.clearInterval(timer));
+            dashboardRotationTimers = [];
+
+            dashboardContent.querySelectorAll('tbody[data-rotation-page-size]').forEach((tbody) => {
+                const rows = Array.from(tbody.rows);
+                const pageSize = Number(tbody.dataset.rotationPageSize);
+                const columnCount = Number(tbody.dataset.columnCount);
+                let page = 0;
+
+                const showPage = () => {
+                    const visibleRows = rows.slice(page * pageSize, (page + 1) * pageSize);
+                    tbody.replaceChildren(...visibleRows);
+
+                    if (rows.length === 0) {
+                        const emptyRow = document.createElement('tr');
+                        const cell = document.createElement('td');
+                        cell.colSpan = columnCount;
+                        cell.className = 'text-center text-secondary py-4';
+                        cell.textContent = tbody.dataset.emptyMessage;
+                        emptyRow.appendChild(cell);
+                        tbody.appendChild(emptyRow);
+                    }
+
+                    const occupiedRows = visibleRows.length + (rows.length === 0 ? 1 : 0);
+                    for (let index = occupiedRows; index < pageSize; index++) {
+                        const placeholder = document.createElement('tr');
+                        const cell = document.createElement('td');
+                        cell.colSpan = columnCount;
+                        cell.setAttribute('aria-hidden', 'true');
+                        cell.textContent = '\u00a0';
+                        placeholder.appendChild(cell);
+                        tbody.appendChild(placeholder);
+                    }
+                };
+
+                showPage();
+
+                if (rows.length > pageSize) {
+                    const pageCount = Math.ceil(rows.length / pageSize);
+                    dashboardRotationTimers.push(window.setInterval(() => {
+                        page = (page + 1) % pageCount;
+                        showPage();
+                    }, 15_000));
+                }
+            });
+        }
+
+        initializeDashboardRotations();
+
+        dashboardContent.addEventListener('click', function (event) {
+            const row = event.target.closest('tr.dashboard-repair-row[data-href]');
+            if (row) {
+                showPageProgress();
+                window.location.assign(row.dataset.href);
+            }
+        });
+
+        dashboardContent.addEventListener('keydown', function (event) {
+            const row = event.target.closest('tr.dashboard-repair-row[data-href]');
+            if (row && (event.key === 'Enter' || event.key === ' ')) {
+                event.preventDefault();
+                showPageProgress();
+                window.location.assign(row.dataset.href);
+            }
+        });
 
         window.setInterval(async () => {
             try {
@@ -30,6 +98,7 @@
                 }
 
                 dashboardContent.innerHTML = await response.text();
+                initializeDashboardRotations();
             } catch (error) {
                 console.error(error);
             }

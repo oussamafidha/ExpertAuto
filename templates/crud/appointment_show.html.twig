@@ -7,8 +7,12 @@
         <h1 class="h2 fw-bold mb-0">Fiche rendez-vous</h1>
         <div class="d-flex gap-2">
             <a class="btn btn-outline-secondary" href="{{ path('appointment_index') }}">Retour aux rendez-vous</a>
-            {% if is_granted('ROLE_MECHANIC') %}
+            {% if is_granted('ROLE_MECHANIC') or is_granted('ROLE_ADMIN') or is_granted('ROLE_STOREKEEPER') %}
                 <a class="btn btn-primary" href="{{ path('appointment_edit', {id: item.id}) }}">Modifier</a>
+                <form method="post" action="{{ path('appointment_to_repair', {id: item.id}) }}" class="d-inline">
+                    <input type="hidden" name="_token" value="{{ csrf_token('appointment_to_repair_' ~ item.id) }}">
+                    <button class="btn btn-success" type="submit">Créer fiche réparation</button>
+                </form>
             {% endif %}
         </div>
     </div>

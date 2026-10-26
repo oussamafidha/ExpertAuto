@@ -1,4 +1,4 @@
-# Expert Auto Plus — Symfony 7 / PHP 8.2+ / MySQL
+# Le professionnel — Symfony 7 / PHP 8.2+ / MySQL
 
 Application Web : tableau de bord, voitures, rendez-vous, réparations, mécaniciens/utilisateurs, stock de pièces et factures.
 
