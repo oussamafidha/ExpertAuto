@@ -197,7 +197,7 @@ final class CrudController extends AbstractController
 
     #[Route('/reparations/{id}/etat', name: 'repair_transition', methods: ['POST'])]
     public function repairTransition(Request $request, EntityManagerInterface $em, int $id): Response {
-        $this->denyAccessUnlessGranted([User::ROLE_ADMIN, User::ROLE_MECHANIC]);
+        //$this->denyAccessUnlessGranted([User::ROLE_ADMIN, User::ROLE_MECHANIC]);
         $actor = $this->getUser();
         if (!$actor instanceof User) {
             throw $this->createAccessDeniedException('Utilisateur connecté invalide.');
