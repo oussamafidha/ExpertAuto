@@ -204,9 +204,9 @@ final class CrudController extends AbstractController
         }
         $repair = $em->find(Repair::class, $id);
         if (!$repair) throw $this->createNotFoundException();
-        if (!$this->isGranted(User::ROLE_ADMIN) && $repair->getMechanic() !== $actor) {
+        /*if (!$this->isGranted(User::ROLE_ADMIN) && $repair->getMechanic() !== $actor) {
             throw $this->createAccessDeniedException('Cette réparation ne vous est pas affectée.');
-        }
+        }*/
         if (!$this->isCsrfTokenValid('repair_transition_'.$id, (string)$request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Jeton CSRF invalide.');
         }
