@@ -54,20 +54,18 @@
             </table>
         </div>
     </div>
-    {% if is_granted('ROLE_MECHANIC') and transitions is not empty %}
-        <div class="card p-4 mt-4">
-            <h2 class="h5 fw-bold mb-3">Faire évoluer la réparation</h2>
-            <div class="d-flex flex-wrap gap-2">
-                {% for transition in transitions %}
-                    <form method="post" action="{{ path('repair_transition', {id: item.id}) }}">
-                        <input type="hidden" name="_token" value="{{ csrf_token('repair_transition_' ~ item.id) }}">
-                        <input type="hidden" name="nextState" value="{{ transition.nextState }}">
-                        <button class="btn {{ transition.nextState == 'Annulé' ? 'btn-outline-danger' : 'btn-outline-primary' }}" type="submit">
-                            {{ transition.nextState == 'Annulé' ? 'Annuler' : 'Passer à ' ~ transition.nextState }}
-                        </button>
-                    </form>
-                {% endfor %}
-            </div>
+    <div class="card p-4 mt-4">
+        <h2 class="h5 fw-bold mb-3">Faire évoluer la réparation</h2>
+        <div class="d-flex flex-wrap gap-2">
+            {% for transition in transitions %}
+                <form method="post" action="{{ path('repair_transition', {id: item.id}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('repair_transition_' ~ item.id) }}">
+                    <input type="hidden" name="nextState" value="{{ transition.nextState }}">
+                    <button class="btn {{ transition.nextState == 'Annulé' ? 'btn-outline-danger' : 'btn-outline-primary' }}" type="submit">
+                        {{ transition.nextState == 'Annulé' ? 'Annuler' : 'Passer à ' ~ transition.nextState }}
+                    </button>
+                </form>
+            {% endfor %}
         </div>
-    {% endif %}
+    </div>
 {% endblock %}
