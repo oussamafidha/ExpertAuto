@@ -165,17 +165,7 @@ final class CrudController extends AbstractController
         $user = $this->getUser();
         if (!$user instanceof User) throw $this->createAccessDeniedException();
         $qb = $em->getRepository(Repair::class)->createQueryBuilder('repair')->orderBy('repair.openedAt', 'DESC');
-        if ($this->isGranted(User::ROLE_ADMIN)) {
-            // admin sees all repairs
-        } elseif ($this->isGranted(User::ROLE_MECHANIC)) {
-            $qb->andWhere('repair.mechanic = :user')->setParameter('user', $user);
-        } elseif ($this->isGranted(User::ROLE_CLIENT)) {
-            $qb->join('repair.vehicle', 'vehicle')->andWhere('vehicle.client = :user')->setParameter('user', $user);
-        } elseif ($this->isGranted(User::ROLE_STOREKEEPER)) {
-            // storekeeper sees all repairs but cannot update status
-        } else {
-            throw $this->createAccessDeniedException();
-        }
+        // Tous les utilisateurs authentifiés peuvent consulter les réparations.
         return $this->render('crud/repairs.html.twig', ['items' => $qb->getQuery()->getResult()]);
     }
 
@@ -184,8 +174,7 @@ final class CrudController extends AbstractController
         $repair = $em->find(Repair::class, $id);
         if (!$repair) throw $this->createNotFoundException();
         $this->denyUnlessCanViewRepair($repair);
-        $transitions = $em->getRepository(RepairStateTransition::class)
-            ->findBy(['stateName' => $repair->getStatus()]);
+        $transitions = $this->getRepairTransitions($em, $repair);
         $history = $em->getRepository(RepairStatusHistory::class)
             ->findBy(['repair' => $repair], ['createdAt' => 'DESC', 'id' => 'DESC']);
         return $this->render('crud/repair_show.html.twig', [
@@ -197,16 +186,14 @@ final class CrudController extends AbstractController
 
     #[Route('/reparations/{id}/etat', name: 'repair_transition', methods: ['POST'])]
     public function repairTransition(Request $request, EntityManagerInterface $em, int $id): Response {
-        //$this->denyAccessUnlessGranted([User::ROLE_ADMIN, User::ROLE_MECHANIC]);
         $actor = $this->getUser();
         if (!$actor instanceof User) {
             throw $this->createAccessDeniedException('Utilisateur connecté invalide.');
         }
         $repair = $em->find(Repair::class, $id);
         if (!$repair) throw $this->createNotFoundException();
-        /*if (!$this->isGranted(User::ROLE_ADMIN) && $repair->getMechanic() !== $actor) {
-            throw $this->createAccessDeniedException('Cette réparation ne vous est pas affectée.');
-        }*/
+
+        // Tous les utilisateurs authentifiés peuvent faire évoluer le statut d'une réparation.
         if (!$this->isCsrfTokenValid('repair_transition_'.$id, (string)$request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Jeton CSRF invalide.');
         }
@@ -217,7 +204,11 @@ final class CrudController extends AbstractController
             'nextState' => (string)$request->request->get('nextState'),
         ]);
         if (!$transition) {
-            throw $this->createAccessDeniedException('Cette transition de statut n’est pas autorisée.');
+            $fallback = $this->getDefaultTransitionForStatus($repair->getStatus(), (string)$request->request->get('nextState'));
+            if ($fallback === null) {
+                throw $this->createAccessDeniedException('Cette transition de statut n’est pas autorisée.');
+            }
+            $transition = $fallback;
         }
 
         $repair->setStatus($transition->getNextState());
@@ -347,15 +338,8 @@ final class CrudController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        if ($this->isGranted(User::ROLE_ADMIN) || $this->isGranted(User::ROLE_STOREKEEPER)) {
-            return;
-        }
-
-        if ($this->isGranted(User::ROLE_MECHANIC) && $repair->getMechanic() === $user) {
-            return;
-        }
-
-        if ($this->isGranted(User::ROLE_CLIENT) && $repair->getVehicle()?->getClient() === $user) {
+        // Tous les utilisateurs authentifiés peuvent consulter une réparation.
+        if ($this->isGranted(User::ROLE_USER)) {
             return;
         }
 
@@ -368,5 +352,42 @@ final class CrudController extends AbstractController
             $em->getRepository(User::class)->findBy([], ['fullName' => 'ASC']),
             static fn (User $user): bool => in_array(User::ROLE_MECHANIC, $user->getRoles(), true)
         ));
+    }
+
+    private function getRepairTransitions(EntityManagerInterface $em, Repair $repair): array
+    {
+        $transitions = $em->getRepository(RepairStateTransition::class)->findBy(['stateName' => $repair->getStatus()]);
+        if ($transitions !== []) {
+            return $transitions;
+        }
+
+        $possible = $this->getDefaultTransitionsForStatus($repair->getStatus());
+        return array_map(
+            static fn (string $nextState): RepairStateTransition => new RepairStateTransition($repair->getStatus(), $nextState),
+            $possible
+        );
+    }
+
+    private function getDefaultTransitionsForStatus(string $status): array
+    {
+        $defaultTransitions = [
+            'Ajouté' => ['En réparation', 'Annulé'],
+            'En attente' => ['En réparation', 'Annulé'],
+            'En réparation' => ['En attente', 'Réparé', 'Annulé'],
+            'Réparé' => ['En attente', 'Annulé'],
+            'Annulé' => ['En attente'],
+        ];
+
+        return $defaultTransitions[$status] ?? [];
+    }
+
+    private function getDefaultTransitionForStatus(string $status, string $nextState): ?RepairStateTransition
+    {
+        $nextStates = $this->getDefaultTransitionsForStatus($status);
+        if (!in_array($nextState, $nextStates, true)) {
+            return null;
+        }
+
+        return new RepairStateTransition($status, $nextState);
     }
 }
